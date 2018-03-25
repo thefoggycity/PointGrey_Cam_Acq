@@ -25,33 +25,12 @@ namespace PointGrey_Cam_Acq
         {
             int result = 0;
 
-            writeLog(String.Format("\n*** IMAGE ACQUISITION ***\n\n"));
+            writeLog(String.Format("\n*** BW IMAGE ACQUISITION ***\n\n"));
 
             try
             {
-                //
                 // Set acquisition mode to continuous
-                //
-                // *** NOTES ***
-                // Because the example acquires and saves 10 images, setting 
-                // acquisition mode to continuous lets the example finish. If 
-                // set to single frame or multiframe (at a lower number of 
-                // images), the example would just hang. This is because the 
-                // example has been written to acquire 10 images while the 
-                // camera would have been programmed to retrieve less than that.
-                // 
-                // Setting the value of an enumeration node is slightly more 
-                // complicated than other node types. Two nodes are required: 
-                // first, the enumeration node is retrieved from the nodemap and 
-                // second, the entry node is retrieved from the enumeration node. 
-                // The symbolic of the entry node is then set as the new value 
-                // of the enumeration node.
-                //
-                // Notice that both the enumeration and entry nodes are checked 
-                // for availability and readability/writability. Enumeration 
-                // nodes are generally readable and writable whereas entry 
-                // nodes are only ever readable.
-                // 
+
                 // Retrieve enumeration node from nodemap
                 IEnum iAcquisitionMode = nodeMap.GetNode<IEnum>("AcquisitionMode");
                 if (iAcquisitionMode == null || !iAcquisitionMode.IsWritable)
@@ -115,108 +94,50 @@ namespace PointGrey_Cam_Acq
                 writeLog(String.Format("\n"));
 
                 // Retrieve, convert, and save images
-                const int NumImages = 10;
-
-                for (int imageCnt = 0; imageCnt < NumImages; imageCnt++)
+                try
                 {
-                    try
+                    //
+                    // Retrieve next received image
+                    //
+                    // *** NOTES ***
+                    // Capturing an image houses images on the camera buffer. 
+                    // Trying to capture an image that does not exist will 
+                    // hang the camera.
+                    //
+                    // Using-statements help ensure that images are released.
+                    // If too many images remain unreleased, the buffer will
+                    // fill, causing the camera to hang. Images can also be
+                    // released manually by calling Release().
+                    // 
+                    using (IManagedImage rawImage = cam.GetNextImage())
                     {
                         //
-                        // Retrieve next received image
+                        // Ensure image completion
                         //
                         // *** NOTES ***
-                        // Capturing an image houses images on the camera buffer. 
-                        // Trying to capture an image that does not exist will 
-                        // hang the camera.
+                        // Images can easily be checked for completion. This 
+                        // should be done whenever a complete image is 
+                        // expected or required. Alternatively, check image
+                        // status for a little more insight into what 
+                        // happened.
                         //
-                        // Using-statements help ensure that images are released.
-                        // If too many images remain unreleased, the buffer will
-                        // fill, causing the camera to hang. Images can also be
-                        // released manually by calling Release().
-                        // 
-                        using (IManagedImage rawImage = cam.GetNextImage())
+                        if (rawImage.IsIncomplete)
                         {
-                            //
-                            // Ensure image completion
-                            //
-                            // *** NOTES ***
-                            // Images can easily be checked for completion. This 
-                            // should be done whenever a complete image is 
-                            // expected or required. Alternatively, check image
-                            // status for a little more insight into what 
-                            // happened.
-                            //
-                            if (rawImage.IsIncomplete)
-                            {
-                                writeLog(String.Format(
-                                    "Image incomplete with image status {0}...\n", rawImage.ImageStatus));
-                            }
-                            else
-                            {
-                                //
-                                // Print image information; width and height 
-                                // recorded in pixels
-                                //
-                                // *** NOTES ***
-                                // Images have quite a bit of available metadata 
-                                // including CRC, image status, and offset 
-                                // values to name a few.
-                                //
-                                uint width = rawImage.Width;
-
-                                uint height = rawImage.Height;
-
-                                writeLog(String.Format(
-                                    "Grabbed image {0}, width = {1}, height = {1}\n", imageCnt, width, height));
-                                writeLog(String.Format(
-                                    "Pixel format is {0}\n", rawImage.PixelFormatName));
-
-                                //
-                                // Convert image to mono 8
-                                //
-                                // *** NOTES ***
-                                // Images can be converted between pixel formats
-                                // by using the appropriate enumeration value.
-                                // Unlike the original image, the converted one 
-                                // does not need to be released as it does not 
-                                // affect the camera buffer.
-                                // 
-                                // Using statements are a great way to ensure code
-                                // stays clean and avoids memory leaks.
-                                // leaks.
-                                //
-                                using (IManagedImage convertedImage = rawImage.Convert(PixelFormatEnums.Mono8))
-                                {
-                                    // Create a unique filename
-                                    String filename = "Acquisition-CSharp-";
-                                    if (deviceSerialNumber != "")
-                                    {
-                                        filename = filename + deviceSerialNumber + "-";
-                                    }
-                                    filename = filename + imageCnt + ".jpg";
-
-                                    //
-                                    // Save image
-                                    // 
-                                    // *** NOTES ***
-                                    // The standard practice of the examples is 
-                                    // to use device serial numbers to keep 
-                                    // images of one device from overwriting 
-                                    // those of another.
-                                    //
-                                    convertedImage.Save(filename);
-
-                                    writeLog(String.Format("Image saved at {0}\n\n", filename));
-                                }
-                            }
+                            writeLog(String.Format(
+                                "Image incomplete with image status {0}...\n", rawImage.ImageStatus));
+                        }
+                        else
+                        {
+                            // TODO: Need to return the acquired rawImage here.
+                            return 0;
                         }
                     }
-                    catch (SpinnakerException ex)
-                    {
-                        writeLog(String.Format("Error: {0}\n", ex.Message));
-                        result = -1;
-                    }
                 }
+                catch (SpinnakerException ex)
+                {
+                    writeLog(String.Format("Error: {0}\n", ex.Message));
+                    result = -1;
+                } 
 
                 //
                 // End acquisition
@@ -527,6 +448,90 @@ namespace PointGrey_Cam_Acq
             }
 
             return result;
+        }
+
+        // Entry point of the Acquisition Example
+        public void AcquisitionExample()
+        {
+            int result = 0;
+
+            // Since this application saves images in the current folder
+            // we must ensure that we have permission to write to this folder.
+            // If we do not have permission, fail right away.
+            FileStream fileStream;
+            try
+            {
+                fileStream = new FileStream(@"test.txt", FileMode.Create);
+                fileStream.Close();
+                File.Delete("test.txt");
+            }
+            catch
+            {
+                writeLog(String.Format(
+                    "Failed to create file in current folder. Please check permissions."));
+            }
+
+            // Retrieve singleton reference to system object
+            ManagedSystem system = new ManagedSystem();
+
+            // Retrieve list of cameras from the system
+            IList<IManagedCamera> camList = system.GetCameras();
+
+            writeLog(String.Format("Number of cameras detected: {0}\n\n", camList.Count));
+
+            // Finish if there are no cameras
+            if (camList.Count == 0)
+            {
+                // Clear camera list before releasing system
+                camList.Clear();
+
+                // Release system
+                system.Dispose();
+
+                writeLog(String.Format("Not enough cameras!"));
+                writeLog(String.Format("Done!"));
+            }
+
+            //
+            // Run example on each camera
+            //
+            // *** NOTES ***
+            // Cameras can either be retrieved as their own IManagedCamera
+            // objects or from camera lists using the [] operator and an index.
+            //
+            // Using-statements help ensure that cameras are disposed of when
+            // they are no longer needed; otherwise, cameras can be disposed of
+            // manually by calling Dispose(). In C#, if cameras are not disposed
+            // of before the system is released, the system will do so
+            // automatically.
+            //
+            int index = 0;
+
+            foreach (IManagedCamera managedCamera in camList)
+                using (managedCamera)
+                {
+                    writeLog(String.Format("Running example for camera {0}...\n", index));
+
+                    try
+                    {
+                        // Run example
+                        result = result | this.RunSingleCamera(managedCamera);
+                    }
+                    catch (SpinnakerException ex)
+                    {
+                        writeLog(String.Format("Error: {0}\n", ex.Message));
+                        result = -1;
+                    }
+                    writeLog(String.Format("Camera {0} example complete...\n", index++));
+                }
+
+            // Clear camera list before releasing system
+            camList.Clear();
+
+            // Release system
+            system.Dispose();
+
+            writeLog(String.Format("Done!\n"));
         }
     }
 }
