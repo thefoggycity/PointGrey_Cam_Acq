@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Drawing;
 using SpinnakerNET;
 using SpinnakerNET.GenApi;
 
@@ -26,6 +27,9 @@ namespace PointGrey_Cam_Acq
         public MainWindow()
         {
             InitializeComponent();
+
+            // Initialize Main Image Box
+            ImgMain.Stretch = Stretch.Uniform;
         }
 
         private void BtnAcquire_Click(object sender, RoutedEventArgs e)
@@ -35,7 +39,29 @@ namespace PointGrey_Cam_Acq
                     TxtLog.AppendText(str);
                 });
 
-            cam.AcquisitionExample();
+            // Default given example
+            //cam.AcquisitionExample();
+
+            // Retrieve a BW image and display accordingly
+            IManagedImage result = cam.RetrieveMonoImage();   // TODO: Equate it to acquired result.
+            if (result != null)
+                ImgMain.Source = BitmapToImageSource(result.bitmap);
+        }
+
+        private static BitmapImage BitmapToImageSource(Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+
+                return bitmapimage;
+            }
         }
     }
 }

@@ -21,141 +21,132 @@ namespace PointGrey_Cam_Acq
             writeLog = logWriter;
         }
 
-        public int AcquireMono(IManagedCamera cam, INodeMap nodeMap, INodeMap nodeMapTLDevice)
+        private int SetNodeMapItem(INodeMap nodeMap, String nodeName, String entryName)
         {
-            int result = 0;
-
-            writeLog(String.Format("\n*** BW IMAGE ACQUISITION ***\n\n"));
-
             try
             {
-                // Set acquisition mode to continuous
-
                 // Retrieve enumeration node from nodemap
-                IEnum iAcquisitionMode = nodeMap.GetNode<IEnum>("AcquisitionMode");
+                IEnum iAcquisitionMode = nodeMap.GetNode<IEnum>(nodeName);
                 if (iAcquisitionMode == null || !iAcquisitionMode.IsWritable)
                 {
                     writeLog(String.Format(
-                        "Unable to set acquisition mode to continuous (node retrieval). Aborting...\n\n"));
+                        "Unable to set {0} to {1} (node retrieval). Aborting...\n\n",
+                        nodeName, entryName));
                     return -1;
                 }
 
                 // Retrieve entry node from enumeration node
-                IEnumEntry iAcquisitionModeContinuous = iAcquisitionMode.GetEntryByName("Continuous");
+                IEnumEntry iAcquisitionModeContinuous = iAcquisitionMode.GetEntryByName(entryName);
                 if (iAcquisitionModeContinuous == null || !iAcquisitionMode.IsReadable)
                 {
                     writeLog(String.Format(
-                        "Unable to set acquisition mode to continuous (enum entry retrieval). Aborting...\n\n"));
+                        "Unable to set {0} to {1} (enum entry retrieval). Aborting...\n\n",
+                        nodeName, entryName));
                     return -1;
                 }
 
                 // Set symbolic from entry node as new value for enumeration node
                 iAcquisitionMode.Value = iAcquisitionModeContinuous.Symbolic;
-
-                writeLog(String.Format("Acquisition mode set to continuous...\n"));
-
-                //
-                // Begin acquiring images
-                //
-                // *** NOTES ***
-                // What happens when the camera begins acquiring images depends 
-                // on which acquisition mode has been set. Single frame captures 
-                // only a single image, multi frame catures a set number of 
-                // images, and continuous captures a continuous stream of images.
-                // Because the example calls for the retrieval of 10 images, 
-                // continuous mode has been set for the example.
-                // 
-                // *** LATER ***
-                // Image acquisition must be ended when no more images are needed.
-                //
-                cam.BeginAcquisition();
-
-                writeLog(String.Format("Acquiring images...\n"));
-
-                //
-                // Retrieve device serial number for filename
-                //
-                // *** NOTES ***
-                // The device serial number is retrieved in order to keep 
-                // different cameras from overwriting each other's images. 
-                // Grabbing image IDs and frame IDs make good alternatives for 
-                // this purpose.
-                //
-                String deviceSerialNumber = "";
-
-                IString iDeviceSerialNumber = nodeMapTLDevice.GetNode<IString>("DeviceSerialNumber");
-                if (iDeviceSerialNumber != null && iDeviceSerialNumber.IsReadable)
-                {
-                    deviceSerialNumber = iDeviceSerialNumber.Value;
-
-                    writeLog(String.Format(
-                        "Device serial number retrieved as {0}...\n", deviceSerialNumber));
-                }
-                writeLog(String.Format("\n"));
-
-                // Retrieve, convert, and save images
-                try
-                {
-                    //
-                    // Retrieve next received image
-                    //
-                    // *** NOTES ***
-                    // Capturing an image houses images on the camera buffer. 
-                    // Trying to capture an image that does not exist will 
-                    // hang the camera.
-                    //
-                    // Using-statements help ensure that images are released.
-                    // If too many images remain unreleased, the buffer will
-                    // fill, causing the camera to hang. Images can also be
-                    // released manually by calling Release().
-                    // 
-                    using (IManagedImage rawImage = cam.GetNextImage())
-                    {
-                        //
-                        // Ensure image completion
-                        //
-                        // *** NOTES ***
-                        // Images can easily be checked for completion. This 
-                        // should be done whenever a complete image is 
-                        // expected or required. Alternatively, check image
-                        // status for a little more insight into what 
-                        // happened.
-                        //
-                        if (rawImage.IsIncomplete)
-                        {
-                            writeLog(String.Format(
-                                "Image incomplete with image status {0}...\n", rawImage.ImageStatus));
-                        }
-                        else
-                        {
-                            // TODO: Need to return the acquired rawImage here.
-                            return 0;
-                        }
-                    }
-                }
-                catch (SpinnakerException ex)
-                {
-                    writeLog(String.Format("Error: {0}\n", ex.Message));
-                    result = -1;
-                } 
-
-                //
-                // End acquisition
-                //
-                // *** NOTES ***
-                // Ending acquisition appropriately helps ensure that devices 
-                // clean up properly and do not need to be power-cycled to
-                // maintain integrity.
-                //
-                cam.EndAcquisition();
             }
             catch (SpinnakerException ex)
             {
                 writeLog(String.Format("Error: {0}\n", ex.Message));
-                result = -1;
+                return -1;
             }
 
-            return result;
+            writeLog(String.Format("{0} set to {1}...\n", nodeName, entryName));
+
+            return 0;
+        }
+
+        public IManagedImage RetrieveMonoImage()
+        {
+            IManagedImage imgResult = null;
+
+            // Retrieve singleton reference to system object
+            ManagedSystem system = new ManagedSystem();
+
+            // Retrieve list of cameras from the system
+            IList<IManagedCamera> camList = system.GetCameras();
+
+            if (camList.Count < 1)
+            {
+                writeLog(String.Format("No camera detected. Aborted.\n\n"));
+                return null;
+            }
+            else
+            {
+                writeLog(String.Format("Number of cameras detected: {0}\n\n", camList.Count));
+            }
+            // Use the first camera
+            using (camList[0])
+            {
+                writeLog(String.Format("Running example for the 1st camera...\n"));
+
+                IManagedCamera cam = camList[0];
+
+                try
+                {
+                    // Run for a camera
+
+                    // Retrieve TL device nodemap and print device information
+                    INodeMap nodeMapTLDevice = cam.GetTLDeviceNodeMap();
+
+                    PrintDeviceInfo(nodeMapTLDevice);
+
+                    // Initialize camera
+                    cam.Init();
+
+                    // Retrieve GenICam nodemap
+                    INodeMap nodeMap = cam.GetNodeMap();
+
+                    /*****  Acquire single BW image from the camera  *****/
+
+                    writeLog(String.Format("\n*** BW IMAGE ACQUISITION ***\n\n"));
+                    SetNodeMapItem(nodeMap, "AcquisitionMode", "Continuous");
+                    cam.BeginAcquisition();
+                    using (IManagedImage rawImage = cam.GetNextImage())
+                    {
+                        if (rawImage.IsIncomplete)
+                        {
+                            writeLog(String.Format(
+                                "Image incomplete with image status {0}...\n", rawImage.ImageStatus));
+                            imgResult = null;
+                        }
+                        else
+                        {
+                            // TODO: Need to return the acquired rawImage here.
+                            //IManagedImage monoImage = rawImage.Convert(
+                            //    PixelFormatEnums.Mono16, ColorProcessingAlgorithm.EDGE_SENSING);
+                            IManagedImage monoImage = rawImage.Convert(PixelFormatEnums.Mono8);
+                            imgResult =  monoImage;
+                        }
+                    }
+                    cam.EndAcquisition();
+
+                    /*****  Acquiring Complete  *****/
+
+                    // Deinitialize camera
+                    cam.DeInit();
+                }
+                catch (SpinnakerException ex)
+                {
+                    writeLog(String.Format("Error: {0}\n", ex.Message));
+                    imgResult = null;
+                }
+                writeLog(String.Format("Camera example complete...\n"));
+            }
+
+            // Clear camera list before releasing system
+            camList.Clear();
+
+            // Release system
+            system.Dispose();
+
+            writeLog(String.Format("Done!\n"));
+
+            return imgResult;
+
         }
 
 
@@ -515,7 +506,7 @@ namespace PointGrey_Cam_Acq
                     try
                     {
                         // Run example
-                        result = result | this.RunSingleCamera(managedCamera);
+                        result = result | RunSingleCamera(managedCamera);
                     }
                     catch (SpinnakerException ex)
                     {
