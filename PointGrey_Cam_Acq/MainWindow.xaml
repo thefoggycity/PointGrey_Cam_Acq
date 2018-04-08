@@ -5,21 +5,49 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PointGrey_Cam_Acq"
         mc:Ignorable="d"
-        Title="MainWindow" Height="350" Width="525">
+        Title="Star Tracker Camera Console" Height="520" Width="820">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="3*"/>
-            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="4*" MinWidth="200"/>
+            <ColumnDefinition Width="2"/>
+            <ColumnDefinition Width="2*" MinWidth="80"/>
         </Grid.ColumnDefinitions>
         <Grid Grid.Column="0" Grid.ColumnSpan="1" Margin="0,0,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="60"/>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="40"/>
             </Grid.RowDefinitions>
-            <Image x:Name="ImgMain" Grid.Row="0" Margin="10,10,10,10"/>
-            <Button x:Name="BtnAcquire" Grid.Row="1" Width="100" Margin="0,10,10,10" 
-                HorizontalAlignment="Right" Click="BtnAcquire_Click" Content="Acquire"/>
+            <Border Grid.Row="0" Margin="6"
+                    BorderThickness="1" BorderBrush="DimGray">
+                <Image x:Name="ImgMain" Margin="2"/>
+            </Border>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Label VerticalAlignment="Center" Content="Data Actions"/>
+                <Button x:Name="BtnAcquire" Width="100" Margin="6" 
+                        Click="BtnAcquire_Click" Content="Acquire"/>
+                <Button x:Name="BtnSave" Width="100" Margin="6"
+                        Click="BtnSave_Click" Content="Save Picture"/>
+                <Button x:Name="BtnLoad" Width="100" Margin="6"
+                        Click="BtnLoad_Click" Content="Load Picture"/>
+            </StackPanel>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Label VerticalAlignment="Center" Content="Processing"/>
+                <Button x:Name="BtnQuantize" Width="100" Margin="6" 
+                        Click="BtnQuantize_Click" Content="Quantize"/>
+            </StackPanel>
         </Grid>
-        <TextBox x:Name="TxtLog" Grid.Column="1" Margin="10,10,10,10"/>
+        <GridSplitter Grid.Column="1" Width="2" HorizontalAlignment="Stretch"/>
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="40"/>
+            </Grid.RowDefinitions>
+            <TextBox x:Name="TxtLog" Grid.Row="0" Margin="6" IsReadOnly="True"/>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="BtnClearLog" Width="100" Margin="6" 
+                        Click="BtnClearLog_Click" Content="Clear"/>
+            </StackPanel>
+        </Grid>
     </Grid>
 </Window>
