@@ -20,7 +20,7 @@
             </Grid.RowDefinitions>
             <Border Grid.Row="0" Margin="6"
                     BorderThickness="1" BorderBrush="DimGray">
-                <Image x:Name="ImgMain" Margin="2"/>
+                <Image x:Name="ImgMain" Margin="2" Stretch="Uniform"/>
             </Border>
             <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Label VerticalAlignment="Center" Content="Data Actions"/>
@@ -35,6 +35,8 @@
                 <Label VerticalAlignment="Center" Content="Processing"/>
                 <Button x:Name="BtnQuantize" Width="100" Margin="6" 
                         Click="BtnQuantize_Click" Content="Quantize"/>
+                <Button x:Name="BtnTest" Width="100" Margin="6" 
+                        Click="BtnTest_Click" Content="Test"/>
             </StackPanel>
         </Grid>
         <GridSplitter Grid.Column="1" Width="2" HorizontalAlignment="Stretch"/>

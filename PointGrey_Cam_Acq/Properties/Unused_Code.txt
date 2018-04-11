@@ -1,0 +1,16 @@
+﻿From ImgProc.cs (11th April, 2018):
+
+        public void QuantizePixels_CSharp(byte[] pxData)
+        {
+            double pxSum = 0;
+            foreach (byte px in pxData)
+                pxSum += px;
+            pxSum /= specs.pxDataSize;
+            pxSum += 15;
+            for (int i = 0; i < specs.pxDataSize; i++)
+            {
+                pxData[i] = (pxData[i] > pxSum) ? 
+                    Convert.ToByte(0xff) : Convert.ToByte(0);
+            }
+        }
+
