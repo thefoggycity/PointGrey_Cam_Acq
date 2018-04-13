@@ -39,7 +39,7 @@ namespace PointGrey_Cam_Acq
         private void UpdateImg()
         {
             BitmapImage bitmapImage = new BitmapImage();
-
+            
             if (bmpMain != null)
                 using (MemoryStream memory = new MemoryStream())
                 {
@@ -142,8 +142,6 @@ namespace PointGrey_Cam_Acq
             using (MemoryStream imgdata = new MemoryStream())
             {
                 byte[] buff32 = new byte[4];
-                UInt32 pxArrOfs;
-
                 ImgProc imgProc = new ImgProc(  // Initialize image processor
                     str => { TxtLog.AppendText(str); },
                     new Tuple<int, int>(bmpMain.Width, bmpMain.Height), // pxDimens (H,V)
@@ -154,7 +152,7 @@ namespace PointGrey_Cam_Acq
                 bmpMain.Save(imgdata, ImageFormat.Bmp);
                 imgdata.Seek(10, SeekOrigin.Begin); // Find out Pixel Array's offset
                 imgdata.Read(buff32, 0, 4);
-                pxArrOfs = BitConverter.ToUInt32(buff32, 0);
+                uint pxArrOfs = BitConverter.ToUInt32(buff32, 0);
 
                 imgdata.Seek(pxArrOfs, SeekOrigin.Begin);   // Jump to Pixel Array
                 imgdata.Read(pxArr, 0, imgByteSize);    // Read Pixel Array data
@@ -167,8 +165,6 @@ namespace PointGrey_Cam_Acq
 
                 UpdateImg();
             }
-
-            TxtLog.AppendText("Image quantization completed.\n");
         }
 
         private void BtnClearLog_Click(object sender, RoutedEventArgs e)
